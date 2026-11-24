@@ -1,0 +1,78 @@
+"""
+This module is responsible for visualising the data using Matplotlib.
+Any visualisations should be generated via functions in this module.
+"""
+
+import matplotlib.pyplot as plt
+
+def plot_most_reviewed_parks(review_counts):
+    """Display a pie chart of reviews received by each park."""
+
+    parks = list(review_counts.keys())
+    counts = list(review_counts.values())
+
+    plt.figure(figsize=(9, 7))
+    plt.pie(
+        counts,
+        labels=parks,
+        autopct="%1.1f%%",
+        startangle=90,
+        explode=[0.03] * len(parks),
+        shadow=True
+    )
+
+    plt.title("Number of Reviews Received by Each Disneyland Park", fontsize=13, fontweight="bold")
+    plt.axis("equal")
+    plt.tight_layout()
+    plt.show()
+
+def plot_average_rating_bar_chart(labels, average_ratings, title, x_label, rotate_labels=False):
+    """Create a reusable bar chart for average ratings."""
+
+    plt.figure(figsize=(12, 7))
+    plt.bar(labels, average_ratings,width=0.7)
+    plt.title(title,fontsize=13,fontweight="bold")
+    plt.xlabel(x_label)
+    plt.ylabel("Average Rating")
+    plt.ylim(0, 5)
+
+    if rotate_labels:
+        plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+def plot_top_locations_by_average_rating(
+    location_averages, selected_park
+):
+    """Display the top 10 locations by average rating for a park."""
+    if not location_averages:
+        print("No rating data is available for this park.")
+        return
+
+    locations = [item[0] for item in location_averages]
+    average_ratings = [item[1] for item in location_averages]
+    plot_average_rating_bar_chart(
+        locations,
+        average_ratings,
+        f"Top 10 Reviewer Locations by Average Rating - {selected_park}",
+        "Reviewer Location",
+        rotate_labels=True
+    )
+
+def plot_average_rating_by_month(monthly_averages, selected_park):
+    """Display average monthly ratings for a selected park."""
+
+    if not monthly_averages:
+        print("No monthly rating data is available for this park.")
+        return
+
+    months = [item[0] for item in monthly_averages]
+    average_ratings = [item[1] for item in monthly_averages]
+
+    plot_average_rating_bar_chart(
+        months,
+        average_ratings,
+        f"Average Monthly Rating - {selected_park}",
+        "Month",
+        rotate_labels=True
+    )
