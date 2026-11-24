@@ -1,0 +1,142 @@
+"""
+This module exports aggregate Disneyland review information
+using Object-Oriented Programming.
+"""
+
+import csv
+import json
+from pathlib import Path
+
+class ParkDataExporter:
+    """Calculate and export aggregate information for each park."""
+
+    def __init__(self, reviews):
+        self.reviews = reviews
+        self.park_data = self.calculate_park_data()
+
+    def calculate_park_data(self):
+        """Calculate aggregate statistics for every Disneyland park."""
+        park_statistics = {}
+
+        for review in self.reviews:
+            park = review["Branch"]
+
+            if park not in park_statistics:
+                park_statistics[park] = {
+                    "number_of_reviews": 0,
+                    "positive_reviews": 0,
+                    "total_rating": 0,
+                    "countries": set()
+                }
+
+            statistics = park_statistics[park]
+
+            statistics["number_of_reviews"] += 1
+            statistics["total_rating"] += review["Rating"]
+
+            # Positive reviews are defined as ratings of 4 or 5.
+            if review["Rating"] >= 4:
+                statistics["positive_reviews"] += 1
+
+            location = review["Reviewer_Location"].strip()
+
+            if location:
+                statistics["countries"].add(location)
+
+        export_data = {}
+
+        for park, statistics in park_statistics.items():
+            number_of_reviews = statistics["number_of_reviews"]
+
+            export_data[park] = {
+                "number_of_reviews": number_of_reviews,
+                "positive_reviews": statistics["positive_reviews"],
+                "average_review_score": round(
+                    statistics["total_rating"] / number_of_reviews, 2
+                ),
+                "number_of_countries": len(statistics["countries"])
+            }
+
+        return export_data
+
+    def export_txt(self, file_path):
+        """Export park statistics to a TXT file."""
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write("DISNEYLAND PARK REVIEW SUMMARY\n")
+            file.write("=" * 55 + "\n\n")
+
+            for park, statistics in self.park_data.items():
+                file.write(f"Park: {park}\n")
+                file.write("-" * 55 + "\n")
+                file.write(
+                    f"Number of reviews: "
+                    f"{statistics['number_of_reviews']}\n"
+                )
+                file.write(
+                    f"Positive reviews: "
+                    f"{statistics['positive_reviews']}\n"
+                )
+                file.write(
+                    f"Average review score: "
+                    f"{statistics['average_review_score']}\n"
+                )
+                file.write(
+                    f"Number of countries: "
+                    f"{statistics['number_of_countries']}\n\n"
+                )
+
+    def export_csv(self, file_path):
+        """Export park statistics to a CSV file."""
+        fieldnames = [
+            "Park",
+            "Number of reviews",
+            "Positive reviews",
+            "Average review score",
+            "Number of countries"
+        ]
+
+        with open(
+            file_path, "w", encoding="utf-8", newline=""
+        ) as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for park, statistics in self.park_data.items():
+                writer.writerow({
+                    "Park": park,
+                    "Number of reviews": statistics["number_of_reviews"],
+                    "Positive reviews": statistics["positive_reviews"],
+                    "Average review score": statistics["average_review_score"],
+                    "Number of countries": statistics["number_of_countries"]
+                })
+
+    def export_json(self, file_path):
+        """Export park statistics to a JSON file."""
+        json_data = []
+
+        for park, statistics in self.park_data.items():
+            json_data.append({
+                "park": park,
+                **statistics
+            })
+
+        with open(file_path, "w", encoding="utf-8") as file:
+            json.dump(json_data, file, indent=4)
+
+    def export(self, file_format):
+        """Export data in the selected format."""
+        output_folder = Path(__file__).resolve().parent / "exports"
+        output_folder.mkdir(exist_ok=True)
+
+        file_path = output_folder / f"disneyland_summary.{file_format}"
+
+        if file_format == "txt":
+            self.export_txt(file_path)
+        elif file_format == "csv":
+            self.export_csv(file_path)
+        elif file_format == "json":
+            self.export_json(file_path)
+        else:
+            raise ValueError("Unsupported export format.")
+
+        return file_path
