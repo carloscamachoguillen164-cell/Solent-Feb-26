@@ -1,0 +1,206 @@
+"""
+TUI is short for Text-User Interface. This module is responsible for communicating with the user.
+The functions in this module will display information to the user and/or retrieve a response from the user.
+Each function in this module should utilise any parameters and perform user input/output.
+A function may also need to format and/or structure a response e.g. return a list, tuple, etc.
+Any errors or invalid inputs should be handled appropriately.
+Please note that you do not need to read the data file or perform any other such processing in this module.
+"""
+
+def display_title():
+    """Display the application title."""
+
+    title = "Disneyland Review Analyser"
+    print("-" * len(title))
+    print(title)
+    print("-" * len(title))
+
+def display_main_menu():
+    """Display the menu of the main application."""
+    print("\nPlease enter the letter which corresponds "
+          "with your desired menu choice:")
+    print("\t[A] View Data")
+    print("\t[B] Visualise Data")
+    print("\t[C] Export Data")
+    print("\t[X] Exit")
+
+def get_main_menu_choice():
+    """Get and validate the main menu selection."""
+    valid_options = ["A", "B", "C", "X"]
+    while True:
+        choice = input("Your choice: ").strip().upper()
+
+        if choice in valid_options:
+            return choice
+
+        print("Invalid choice. Please select A, B, C or X.")
+
+def get_submenu_choice(valid_options):
+    """Get and validate a submenu selection."""
+    choice = input("\nEnter your choice: ").strip().upper()
+    if choice in valid_options:
+        return choice
+
+    print("\nInvalid submenu choice. Please try again.")
+    return None
+
+def display_view_data_menu():
+    """Display the View Data submenu."""
+    print("\nPlease enter one of the following options:")
+    print("\t[A] View Reviews by Park")
+    print("\t[B] Number of Reviews by Park and Reviewer Location")
+    print("\t[C] Average Score per year by Park")
+    print("\t[D] Average Score per Park by Reviewer Location")
+    return get_submenu_choice(("A", "B", "C", "D"))
+
+def display_visualise_data_menu():
+    """Display the Visualise Data submenu."""
+    print("\nPlease enter one of the following options:")
+    print("\t[A] Most reviewed Parks")
+    print("\t[B] Park Ranking by Nationality")
+    print("\t[C] Most Popular Month by Park")
+    return get_submenu_choice(("A", "B", "C"))
+
+def display_message(message):
+    """Display a message to the user."""
+    print(message)
+
+def get_park_choice(parks):
+    """Display available parks and retrieve the user's selection."""
+
+    print("\nPlease select a park:")
+    for index, park in enumerate(parks, start=1):
+        print(f"[{index}] {park}")
+    choice = input("\nEnter your choice: ").strip()
+
+    if not choice.isdigit():
+        display_message("Invalid choice. Please enter a valid number.")
+        return None
+
+    park_index = int(choice) - 1
+    if 0 <= park_index < len(parks):
+        return parks[park_index]
+    display_message("Invalid park selection. Please try again.")
+    return None
+
+def display_reviews(park_reviews, selected_park):
+    """Display all reviews belonging to the selected park."""
+    print(f"\nReviews for {selected_park}")
+    print("=" * 100)
+    print(
+        f"{'Review ID':<15}"
+        f"{'Rating':<10}"
+        f"{'Year-Month':<15}"
+        f"{'Reviewer Location':<30}"
+        f"{'Branch'}"
+    )
+
+    print("-" * 100)
+    for review in park_reviews:
+        print(
+            f"{review['Review_ID']:<15}"
+            f"{review['Rating']:<10}"
+            f"{review['Year_Month']:<15}"
+            f"{review['Reviewer_Location']:<30}"
+            f"{review['Branch']}"
+        )
+    print("-" * 100)
+    print(f"Total reviews displayed: {len(park_reviews)}")
+
+def get_location_choice(locations):
+    """Ask the user to enter a reviewer location."""
+    location = input(
+        "\nEnter the reviewer location: "
+    ).strip()
+
+    for available_location in locations:
+        if available_location.lower() == location.lower():
+            return available_location
+    display_message(
+        "Invalid reviewer location. Please enter a location "
+        "available in the dataset."
+    )
+    return None
+
+def display_review_count(selected_park, selected_location, count):
+    """Display the number of reviews for a park and location."""
+    print("\nReview Analysis")
+    print("=" * 50)
+    print(f"Disneyland Park: {selected_park}")
+    print(f"Reviewer Location: {selected_location}")
+    print(f"Number of Reviews: {count}")
+    print("=" * 50)
+
+def get_year_choice(years):
+    """Display available years and retrieve the user's selection."""
+    print("\nAvailable years for the selected park:")
+    for year in years:
+        print(f"[{year}]")
+    choice = input("\nEnter the year: ").strip()
+
+    if not choice.isdigit():
+        display_message("Invalid year. Please enter a valid year.")
+        return None
+    selected_year = int(choice)
+
+    if selected_year in years:
+        return selected_year
+
+    display_message("The selected year is not available for this park.")
+
+    return None
+
+def display_average_score(selected_park, selected_year, average_score):
+    """Display the average rating for the selected park and year."""
+
+    print("\nAverage Rating Analysis")
+    print("=" * 50)
+    print(f"Disneyland Park: {selected_park}")
+    print(f"Year: {selected_year}")
+    if average_score is None:
+        print("No reviews were found for this selection.")
+    else:
+        print(f"Average Rating: {average_score:.2f} / 5")
+    print("=" * 50)
+
+def display_average_rating_per_park_location(
+        results:dict[str, dict[str, float]]
+) -> None:
+    """Display average ratings for every park and location."""
+
+    print("\nAVERAGE RATING PER PARK BY REVIEWER LOCATION")
+    print("=" * 65)
+
+    for park, locations in results.items():
+        print(f"\nPark: {park}")
+        print("-" * 65)
+        print(f"{'Reviewer Location':<40} {'Average Rating':>15}")
+        print("-" * 65)
+        for location, average_rating in sorted(locations.items()):
+            print(f"{location:<40} {average_rating:>15.2f}")
+
+        print("-" * 65)
+
+    print("\nEnd of results.")
+
+def get_export_format():
+    """Ask the user to select an export format."""
+    print("\nSelect an export format:")
+    print("[1] TXT")
+    print("[2] CSV")
+    print("[3] JSON")
+
+    valid_formats = {
+        "1": "txt",
+        "2": "csv",
+        "3": "json"
+    }
+
+    while True:
+        choice = input("Enter your choice: ").strip()
+
+        if choice in valid_formats:
+            return valid_formats[choice]
+
+        print("Invalid choice. Please select 1, 2 or 3.")
+
