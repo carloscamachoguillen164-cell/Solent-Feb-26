@@ -1,0 +1,213 @@
+"""
+This module is responsible for processing the data.  It will largely contain functions that will receive the overall dataset and
+perform necessary processes in order to provide the desired result in the desired format.
+It is likely that most sections will require functions to be placed in this module.
+"""
+
+import csv
+from pathlib import Path
+
+def extract_year(year_month):
+    """Extract the year from a Year_Month value safely."""
+    if not year_month or year_month.strip().lower() == "missing":
+        return None
+
+    try:
+        year_part, month_part = year_month.strip().split("-")
+
+        year = int(year_part)
+        month = int(month_part)
+
+        if 1 <= month <= 12:
+            return year
+
+    except (ValueError, AttributeError):
+        return None
+
+    return None
+
+def load_data():
+    """Read the Disneyland reviews CSV file into a list of dictionaries."""
+    project_folder = Path(__file__).resolve().parent
+    csv_path = project_folder / "data" / "disneyland_reviews.csv"
+    reviews = []
+
+    with open(csv_path, mode="r", encoding="utf-8-sig", newline="") as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            row["Review_ID"] = int(row["Review_ID"])
+            row["Rating"] = int(row["Rating"])
+            reviews.append(row)
+
+    return reviews
+
+def get_parks(reviews):
+    """Return a sorted list of unique Disneyland parks."""
+    parks = sorted({
+        review["Branch"] for review in reviews
+    })
+    return parks
+
+def get_reviews_by_park(reviews, selected_park):
+    """Return all reviews belonging to the selected park."""
+
+    park_reviews = []
+    for review in reviews:
+        if review["Branch"] == selected_park:
+            park_reviews.append(review)
+    return park_reviews
+
+def get_locations(reviews):
+    """Return a sorted list of unique reviewer locations."""
+    locations = sorted({
+        review["Reviewer_Location"] for review in reviews
+    })
+    return locations
+
+def get_review_count_by_park_and_location(
+        reviews, selected_park, selected_location):
+    """Count reviews for a selected park and reviewer location."""
+    review_count = 0
+    for review in reviews:
+        if (
+            review["Branch"] == selected_park
+            and review["Reviewer_Location"].lower()
+            == selected_location.lower()
+        ):
+            review_count += 1
+    return review_count
+
+def get_years_by_park(reviews, selected_park):
+    """Return available years for the selected park."""
+    years = set()
+    for review in reviews:
+        if review["Branch"] == selected_park:
+            year = extract_year(review["Year_Month"])
+
+            if year is not None:
+                years.add(year)
+    return sorted(years)
+
+def get_average_score_by_year(reviews, selected_park, selected_year):
+    """Calculate the average rating for a park in a selected year."""
+    ratings = []
+    for review in reviews:
+        year = extract_year(review["Year_Month"])
+
+        if (
+            review["Branch"] == selected_park
+            and year == selected_year
+        ):
+            ratings.append(review["Rating"])
+
+    if not ratings:
+        return None
+    average_score = sum(ratings) / len(ratings)
+    return round(average_score, 2)
+
+def get_review_counts_by_park(reviews):
+    """Calculate the total number of reviews for each park."""
+    review_counts = {}
+    for review in reviews:
+        park = review["Branch"]
+        if park not in review_counts:
+            review_counts[park] = 0
+        review_counts[park] += 1
+
+    return review_counts
+
+def get_average_rating_by_location(reviews, selected_park):
+    """Calculate average ratings for each location in a selected park."""
+    location_ratings = {}
+    for review in reviews:
+        if review["Branch"] == selected_park:
+            location = review["Reviewer_Location"]
+            rating = review["Rating"]
+
+            if location not in location_ratings:
+                location_ratings[location] = []
+
+            location_ratings[location].append(rating)
+
+    location_averages = []
+    for location, ratings in location_ratings.items():
+        average_rating = sum(ratings) / len(ratings)
+        location_averages.append(
+            (location, round(average_rating, 2))
+        )
+    location_averages.sort(
+        key=lambda item: item[1],
+        reverse=True
+    )
+    return location_averages[:10]
+
+def get_average_rating_by_month(reviews, selected_park):
+    """Calculate the average rating for each month for a selected park."""
+    month_ratings = {}
+    for review in reviews:
+        if review["Branch"] == selected_park:
+            year_month = review["Year_Month"]
+
+            if not year_month or year_month.strip().lower() == "missing":
+                continue
+
+            try:
+                year_part, month_part = year_month.strip().split("-")
+                month: int = int(month_part)
+
+                if 1 <= month <= 12:
+                    if month not in month_ratings:
+                        month_ratings[month] = []
+
+                    month_ratings[month].append(review["Rating"])
+
+            except (ValueError, AttributeError):
+                continue
+
+    month_names: list[str] = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+
+    monthly_averages = []
+    for month in sorted(month_ratings):
+        average_rating = (
+            sum(month_ratings[month]) / len(month_ratings[month])
+        )
+
+        monthly_averages.append(
+            (month_names[month - 1], round(average_rating, 2))
+        )
+
+    return monthly_averages
+
+def get_average_rating_per_park_location(
+    reviews: list[dict]
+) -> dict[str, dict[str, float]]:
+    """Calculate average ratings for every park and reviewer location."""
+    park_location_ratings = {}
+    for review in reviews:
+        park = review["Branch"]
+        location = review["Reviewer_Location"]
+        rating = review["Rating"]
+
+        if park not in park_location_ratings:
+            park_location_ratings[park] = {}
+
+        if location not in park_location_ratings[park]:
+            park_location_ratings[park][location] = []
+
+        park_location_ratings[park][location].append(rating)
+
+    results = {}
+
+    for park, locations in park_location_ratings.items():
+        results[park] = {}
+
+        for location, ratings in locations.items():
+            average_rating = sum(ratings) / len(ratings)
+            results[park][location] = round(average_rating, 2)
+
+    return results
